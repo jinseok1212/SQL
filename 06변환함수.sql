@@ -1,0 +1,90 @@
+--변환 함수
+
+--형변환 함수
+--자동형변환을 제공해줍니다. (문자와 숫자간, 문자와 날짜)
+SELECT * FROM EMPLOYEES WHERE SALARY >= '20000'; --문자 -> 숫자 자동형변환이 일어남
+SELECT * FROM EMPLOYEES WHERE HIRE_DATE >= '08/01/01'; -- 문자 -> 날짜 자동형변환
+
+--강제형변환
+--TO_CHAR -> 날짜를 문자
+SELECT TO_CHAR (SYSDATE, 'YYYY-MM-DD HH:MI:SS') AS 시간 FROM DUAL;
+SELECT TO_CHAR (SYSDATE, 'YY-MM-DD AM HH12:MI:SS') AS TIME FROM DUAL;
+SELECT TO_CHAR (SYSDATE, 'YY"년" MM"월" DD"일"') AS TIME FROM DUAL; --포맷값이 아닌 값을 쓰려면 ""으로 묶어줘야 함
+
+--TO_CHAR -> 숫자를 문자
+SELECT TO_CHAR(20000, '9999999999') AS RESULT FROM DUAL; -- 9자리 문자로 표현
+SELECT TO_CHAR(20000, '0999999999') AS RESULT FROM DUAL; -- 9자리 중 0으로 채움
+SELECT TO_CHAR(20000, '999') AS RESULT FROM DUAL; -- 자리수가 부족하면 # 처리됩니다.
+SELECT TO_CHAR(20000.123, '999999.9999') AS RESULT FROM DUAL; -- 정수 6자리, 실수 4자리
+SELECT TO_CHAR(20000, '$999,999,999') AS RESULT FROM DUAL; -- $기호
+SELECT TO_CHAR(20000, 'L999,999,999') AS RESULT FROM DUAL; -- 각 국 지역화폐 기호
+
+--오늘 환율 1372.17원 일 때, SALARY값을 한국 돈으로 표현
+SELECT FIRST_NAME, TO_CHAR(SALARY * 1372.17, 'L999,999,999') AS 원화 FROM EMPLOYEES;
+
+--TO_DATE 문자를 날짜로
+SELECT SYSDATE - TO_DATE('2024-06-13', 'YYYY-MM-DD') FROM DUAL; --날짜 모형에 맞춰서 정확히 적음
+SELECT TO_DATE('2024년 06월 13일', 'YYYY"년" MM"월" DD"일"') FROM DUAL; -- 날짜 포맷 문자가 아니라면 ""
+SELECT TO_DATE('24-06-13 11시 30분 23초', 'YY-MM-DD HH"시" MI"분" SS"초"') FROM DUAL;
+
+-- 2024년06월13일 의 문자로 변환한다면?
+SELECT '240613' FROM DUAL;
+SELECT TO_CHAR(TO_DATE('240613', 'YYMMDD'), 'YYYY"년"MM"월"DD"일') AS 일 FROM DUAL;
+
+--TO_NUMBER 문자를 숫자로
+SELECT '4000' - 1000 FROM DUAL; --자동형변환
+SELECT TO_NUMBER('4000') - 1000 FROM DUAL; --명시적변환 후 연산
+SELECT TO_NUMBER('$5,500') - 1000 FROM DUAL; --자동형변환 X
+SELECT TO_NUMBER('$5,500', '$999,999') - 1000 FROM DUAL; --숫자로 변경이 자동으로 불가능할 경우 명시적 변환
+-------------------------------------------------------------
+--NULL처리 함수
+SELECT NVL(1000, 0), NVL(NULL, 0) FROM DUAL; 
+SELECT NULL + 1000 FROM DUAL; -- NULL에 연산이 들어가면 NULL이 나옴
+SELECT FIRST_NAME, SALARY, COMMISSION_PCT, SALARY + SALARY * COMMISSION_PCT AS 최종급여 FROM EMPLOYEES;
+SELECT FIRST_NAME, SALARY, COMMISSION_PCT, SALARY + SALARY * NVL(COMMISSION_PCT, 0) AS 최종급여 FROM EMPLOYEES;
+
+--NVL2 (대상값, NULL이 아닌경우, NULL 인 경우)
+
+SELECT NVL2(NULL, 'NULL이 아닙니다', 'NULL입니다') FROM DUAL;
+
+SELECT FIRST_NAME, SALARY, COMMISSION_PCT, NVL2(COMMISSION_PCT, SALARY + SALARY * COMMISSION_PCT , SALARY) AS 최종급여 FROM EMPLOYEES;
+
+-- COALESCE(값, 값, 값....) - NULL이 아닌 첫번 째 값을 반환 시켜줌
+SELECT COALESCE(1, 2, 3) FROM DUAL; -- 1이 출력
+SELECT COALESCE(NULL, 2, 3, 4) FROM DUAL; --2이 출력
+SELECT COALESCE(NULL, NULL, 3, NULL) FROM DUAL; --3 출력
+SELECT COALESCE(COMMISSION_PCT, 0) FROM EMPLOYEES; -- NVL과 같음
+
+--DECODE (대상값, 비교값, 결과값, 비교값, 결과값......., ELSE문)
+SELECT DECODE('A', 'A', 'A입니다') FROM DUAL; --IF문
+SELECT DECODE('X', 'A', 'A입니다', 'A가아님') FROM DUAL; -- IF~ELSE구문
+SELECT DECODE('B', 'A', 'A입니다'
+                 , 'B', 'B입니다'
+                 , 'C', 'C입니다'    
+                 , '전부 아닙니다'
+                 )
+FROM DUAL; --ELSE IF 구문
+
+SELECT * FROM EMPLOYEES;
+SELECT JOB_ID, DECODE(JOB_ID, 'IT_PROG', SALARY * 1.1
+                    , 'AD_VP', SALARY * 1.2
+                    , 'FI_MGR', SALARY * 1.3
+                    , SALARY) AS 급여
+FROM EMPLOYEES;
+
+--CASE WHEN THEN ELSE END (SWITCH문과 비슷)
+SELECT JOB_ID,
+       CASE JOB_ID WHEN 'IT_PROG' THEN SALARY * 1.1
+                   WHEN 'AD_VP' THEN SALARY * 1.2
+                   WHEN 'FI_MGR' THEN SALARY * 1.3
+                   ELSE SALARY
+       END AS 급여
+FROM EMPLOYEES;
+-- 비교에 대한 조건을 WHEN절에 쓸 수 있음
+SELECT JOB_ID,
+       CASE WHEN JOB_ID = 'IT_PROG' THEN SALARY * 1.1
+            WHEN JOB_ID = 'AD_VP' THEN SALARY * 1.2
+            WHEN JOB_ID = 'FI_MGR' THEN SALARY * 1.3
+            ELSE SALARY
+       END AS 급여
+FROM EMPLOYEES;
